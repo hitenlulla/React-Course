@@ -341,6 +341,8 @@ function ExpenseItem(props) {
 }
 ```
 
+> Note: props can also be used to send functions to the Child Component. (Later comes in handy while using state management).
+
 ## Adding Vanilla JS logic
 Sometimes data needs to be processed before displaying in the component. For that we can use vanilla JS to write the logic.
 
