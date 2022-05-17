@@ -18,12 +18,13 @@
   - [Event Listener - **onProps**](#event-listener---onprops)
 - [State](#state)
   - [Implementing State](#implementing-state)
-  - [User Inputs](#user-inputs)
+  - [User Inputs (Forms)](#user-inputs-forms)
     - [Collecting Input](#collecting-input)
     - [Litening Inputs](#litening-inputs)
     - [Adding States to Inputs](#adding-states-to-inputs)
     - [Listening Form Submit](#listening-form-submit)
-    - [Communicate Data Up to Parent](#communicate-data-up-to-parent)
+    - [Communicate Data from Child to Parent (Up)](#communicate-data-from-child-to-parent-up)
+    - [Communicate State-Setter from Parent to Child (Down)](#communicate-state-setter-from-parent-to-child-down)
 - [Rendering Dynamic Content](#rendering-dynamic-content)
   - [Rendering Dynamic List](#rendering-dynamic-list)
   - [Rendering Stateful Lists](#rendering-stateful-lists)
@@ -39,6 +40,13 @@
     - [Declaring](#declaring-1)
     - [Dynamic Styling](#dynamic-styling-2)
     - [Media Queries](#media-queries-1)
+- [Fragments](#fragments)
+- [Portals](#portals)
+- [Refs](#refs)
+  - [Declaring a ref](#declaring-a-ref)
+  - [Connecting Ref to HTML element](#connecting-ref-to-html-element)
+  - [Using the ref to get value of input (DOM Element)](#using-the-ref-to-get-value-of-input-dom-element)
+  - [Using ref to do DOM manipulation](#using-ref-to-do-dom-manipulation)
 
 # Introduction
 1. #### What is **React** ?
@@ -572,7 +580,7 @@ function ExpenseItem(props) {
 > 
 > Every `<ExpenseItem>` has its own state and state update on one `<ExpenseItem>` doesn't affect the state of other `<ExpenseItem>`
 
-## User Inputs
+## User Inputs (Forms)
 ### Collecting Input
 We can create a form component to get input from user.
 
@@ -908,7 +916,7 @@ return (
   );
 ```
 
-### Communicate Data Up to Parent
+### Communicate Data from Child to Parent (Up)
 Once we collected the data we need to send it to the parent component so it can render a new ExpenseItem
 
 > Child - Parent Communication
@@ -1021,6 +1029,75 @@ To Send newExpenseData from the form to App component. We need to follow a chain
     </div>)
     }
   ```
+
+### Communicate State-Setter from Parent to Child (Down)
+
+If we want to update state of the Parent component using an event from the Child component.
+
+We can use props to send state updater from parent to child.
+
+Eg: Rendering a Modal component when wrong information is entered in the form (Form Data -> Modal). And closing the modal from a button present on it (Modal -> Form Data).
+
+> _ExpenseForm.js_: Using **props** to send state setter via event handler
+
+  ```jsx
+    const [error, setError] = useState(null);
+    
+    const errorHandler = () => {
+      setError(null);
+    };
+    
+    const formSubmitHandler = (event) => {  
+      // Form validation - setError to non null
+      if(enteredTitle.length === 0 || +enteredAmount === 0) {
+        setError("Error", "Input can't be blank")
+        return;
+      }
+      .
+      .
+      .
+    }
+
+    // return a modal if curr state of error is not null and return the form
+    // onConfirm attr is used to send errorHandler to Child(Modal) which is used to setError to null
+    return(
+      <div>
+        {error && (
+          <ErrorModal
+            title={error.title}
+            message={error.message}
+            onConfirm={errorHandler}
+          />
+        )}
+        <form onSubmit={addExpenseHandler}>
+        .
+        .
+        .
+        </form>
+      </div>
+
+    )
+
+  ```
+
+> In *Backdrop.js*
+```jsx
+
+// If the backdrop is clicked or the button is clicked, the onConfirm [errorHandler from parent(ExpenseForm)] is called which calls the setError(null) and closes the modal.
+const ErrorModal = (props) => {
+  return (
+    <div>
+      <div class="backdrop" onClick={props.onConfirm} />
+      <div>
+        <h2>{props.title}</h2>
+        <p>{props.message}</p>
+        <button onClick={props.onConfirm}>Okay</button>
+      </div>
+    </div>
+  );
+};
+
+```
 
 # Rendering Dynamic Content
 Till now, in our app we have added ExpenseItems statically by defining each item in App.js. This will not work for creating new ExpenseItems. To Create new ExpenseItems we need to render Dynamic Content.
@@ -1409,4 +1486,155 @@ To add media queries, simply change the *Component.module.css* file
     width: auto;
   }
 }
+```
+
+# Fragments
+JSX has a major drawback that we can only return a single element from the component.
+
+```jsx
+const Component = (props) => {
+  return (
+    <h2>Hello</h2>
+    <p>Hi</p>
+  );
+};
+```
+
+> **The above code does not work**
+
+To solve this drawback we can use a <div> and encapsulate the JSX within it.
+
+```jsx
+const Component = (props) => {
+  return (
+    <div>
+      <h2>Hello</h2>
+      <p>Hi</p>
+    </div>
+  );
+};
+```
+
+In complex applications, A lot of divs will be rendered on the page, creating a div-soup. This can make the app slow.
+
+Another work around is to use a **Wrapper Component**
+> In *Wrapper.js*
+```jsx
+const Wrapper = () => {return props.children}
+export default Wrapper
+```
+
+> In *Component.js*
+```jsx
+import Wrapper from './Wrapper'
+
+const Component = (props) => {
+  return (
+    <Wrapper>
+      <h2>Hello</h2>
+      <p>Hi</p>
+    </Wrapper>
+  );
+};
+```
+**Wrapper component** is a dummy component that tricks React to believe that only one element is returned.
+
+We don't need to do this on our own as React provides a Component called **Fragment**
+
+```jsx
+import React, { Fragment } from 'react'
+
+const Component = (props) => {
+  return (
+    <Fragment>
+      <h2>Hello</h2>
+      <p>Hi</p>
+    </Fragment>
+  );
+};
+```
+
+or another syntax is using <>-</>.
+>**But this doesn't work in all the react versions**
+```jsx
+import React, { Fragment } from 'react'
+
+const Component = (props) => {
+  return (
+    <>
+      <h2>Hello</h2>
+      <p>Hi</p>
+    </>
+  );
+};
+```
+
+# Portals
+React renders all the Components inside a div 'root'. This breaks the HTML semantics.
+
+For example, The Backdrop and Modal should not be inside the root div and should be at the top of the HTML document.
+
+To solve this, we can portal the Backdrop and Modal components to a custom div we make in *public/index.html*
+
+> In *public/index.html*
+```html
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="backdrop-root"></div>
+  <div id="overlay-root"></div>
+  <div id="root"></div>  
+</body>
+```
+
+Create a portal in Component file - ReactDOM.createPortal()
+
+> In ErrorModal.js
+```jsx
+import React from "react";
+import ReactDOM from "react-dom";
+
+const ErrorModal = (props) => {
+  return (
+    <React.Fragment>
+      {ReactDOM.createPortal(
+        <Backdrop onConfirm={props.onConfirm} />,
+        document.getElementById("backdrop-root")
+      )}
+
+      {ReactDOM.createPortal(
+        <ModalOverlay onConfirm={props.onConfirm} />,
+        document.getElementById("overlay-root")
+      )}
+    </React.Fragment>
+  );
+};
+```
+
+# Refs
+A special hook used to create a reference link between HTML element and React code. i.e. Get access of DOM elements to work with them. 
+
+For example: We can create a ref on a input tag to get the input value without using states on each keystroke.
+
+## Declaring a ref
+```js
+const nameInputElement = useRef();
+```
+
+## Connecting Ref to HTML element
+Using a ref attribute on JSX element
+```html
+<input id="username" type="text" ref={nameInputElement} />
+```
+
+## Using the ref to get value of input (DOM Element)
+```jsx
+console.log(nameInputElement.current.value)
+```
+
+## Using ref to do DOM manipulation
+Refs can also be used for DOM manipulation but it is preferred **not to be used**.
+
+Simple manipulations like reseting the value field of input can be considered.
+```jsx
+nameInputElement.current.value = ''
 ```
