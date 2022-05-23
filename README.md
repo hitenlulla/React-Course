@@ -45,8 +45,29 @@
 - [Refs](#refs)
   - [Declaring a ref](#declaring-a-ref)
   - [Connecting Ref to HTML element](#connecting-ref-to-html-element)
-  - [Using the ref to get value of input (DOM Element)](#using-the-ref-to-get-value-of-input-dom-element)
+  - [Using the ref to read value of input (DOM Element)](#using-the-ref-to-read-value-of-input-dom-element)
   - [Using ref to do DOM manipulation](#using-ref-to-do-dom-manipulation)
+- [Effects / Side-Effects](#effects--side-effects)
+  - [**useEffect()**:](#useeffect)
+  - [Defining a **useEffect**](#defining-a-useeffect)
+    - [Without dependencies](#without-dependencies)
+    - [With dependencies](#with-dependencies)
+  - [Cleanup function](#cleanup-function)
+- [Complex State Updates - Reducer](#complex-state-updates---reducer)
+  - [**useReducer()**](#usereducer)
+  - [Defining a **useReducer()**](#defining-a-usereducer)
+  - [Updating states using actions](#updating-states-using-actions)
+  - [When to use **useReducer()** vs **useState()**](#when-to-use-usereducer-vs-usestate)
+    - [useState():](#usestate)
+    - [useReducer():](#usereducer-1)
+- [Context API:](#context-api)
+  - [Defining a **Context**](#defining-a-context)
+  - [**Providing** the context with **value** attr](#providing-the-context-with-value-attr)
+  - [Consuming the context](#consuming-the-context)
+    - [Using **Consumer**](#using-consumer)
+    - [Using **useContext()** Hook](#using-usecontext-hook)
+  - [Creating a custom context provider Component](#creating-a-custom-context-provider-component)
+  - [Limitations](#limitations)
 
 # Introduction
 1. #### What is **React** ?
@@ -1626,7 +1647,7 @@ Using a ref attribute on JSX element
 <input id="username" type="text" ref={nameInputElement} />
 ```
 
-## Using the ref to get value of input (DOM Element)
+## Using the ref to read value of input (DOM Element)
 ```jsx
 console.log(nameInputElement.current.value)
 ```
@@ -1638,3 +1659,356 @@ Simple manipulations like reseting the value field of input can be considered.
 ```jsx
 nameInputElement.current.value = ''
 ```
+
+Note: The Components that use refs are called *Uncontrolled Components* as they are not controlled by React.
+
+*Controlled Components* are components that use State management of react.
+
+# Effects / Side-Effects
+Main task of React is to render components on the webpage. Components are rendered on the screen when the app starts or when the State of the app changes.
+
+Suppose we want to change the state of the component on a HTTP request, and we define the HTTP calling inside the component function. Whenever the component will be rendered an HTTP call will be made, which will inturn render the component again. This can cause an infinite loop. This is an example of a side effect.
+
+To overcome the problem we can use a special react hook **useEffect()**
+
+## **useEffect()**:
+`useEffect(()=> {}, [])`
+
+It takes two parameters, An arrow function which consists of side effect tasks to be performed. And an array of dependencies that define when the arrow function should be executed.
+
+## Defining a **useEffect**
+### Without dependencies
+> Eg: On page refresh, check if user was logged in using browser's localStorage. And keep him logged in.
+> >
+> Blank [] dependencies means there will not be any change in dependencies hence this function will only run once on start.
+```jsx
+useEffect(()=>{
+  if(localStorage.getItem('isLoggedIn') === '1')  setIsLoggedIn(true)
+},[])
+```
+
+### With dependencies
+> Validate form if the entered email and password are valid. Run this function everytime the enteredEmail and enteredPassword change.
+
+```jsx
+useEffect(() => {
+  setFormIsValid(
+    enteredEmail.includes('@') && enteredPassword.trim().length > 6
+  );
+}, [enteredEmail, enteredPassword]);
+```
+
+## Cleanup function
+useEffect() returns a function, and that function runs before the next execution of useEffect.
+
+This can be used for **debouncing**: Wait for the user to finish typing the email and password and then validate the form. (As validating on every keystroke will cause a lot of state updates and network traffic).
+
+```jsx
+useEffect(() => {
+  // Set a timer for 500ms for validating form every keystroke
+  const timer = setTimeout(() => {      
+    setFormIsValid(        
+      enteredEmail.includes('@') && enteredPassword.trim().length > 6
+    );
+  }, 500)    
+
+  // Cleanup function
+  return () => {
+    // Clear the timer for every keystroke.
+    // Only the last keystroke will have a timer
+    clearTimeout(timer)
+  }
+}, [enteredEmail, enteredPassword]);
+```
+
+# Complex State Updates - Reducer
+
+When one state is changing by taking the current value of some other state (States are dependent), State Scheduling of react can cause issues. Hence to manage such complex states we use useReducer().
+
+## **useReducer()**
+`const [ currState, dispatchFn ] = useReducer(reducerFn, initState, initFn)`
+
+> **currState**: Gets the latest snapshot of the state.
+> 
+> **dispatchFn**: A Fn used to dispatch a new action(trigger on state update).
+> >
+> **reducerFn**: A function that is automatically triggered once an action is dispatched (via dispatchFn()) - It receives the latest snapshot of the state and should return the new updated state.
+> 
+> `(prevState, action) => newState`
+> >
+> **initState**: Initialize `currState` with a value.
+> >
+> **initFn**: A Fn used to set the `currState` programmatically.
+
+## Defining a **useReducer()**
+Example: Handle state for email input and if it's valid. Conventionally we will use 2 states and the validity state depends upon the current value of email input. This is a complex state management hence we use useReducer()
+
+```jsx
+const [emailState, dispatchEmail] = useReducer(
+    // reducerFn
+    (prevState, action) => {
+      // newState is blank if there is no defined type of action
+      let newState = { value: "", isValid: false };
+
+      // ACTION of type USER_INPUT
+      if (action.type === "USER_INPUT") {
+        // newState takes value of the payload of action, 
+        // and validity check is also made on the payload of action.
+        newState = {
+          value: action.payload,
+          isValid: action.payload.includes("@"),
+        };
+      }
+
+      // ACTION of type INPUT_BLUR
+      if (action.type === "INPUT_BLUR") {
+        // newState takes the value of previous state
+        // and validity check is also made on the value of previous state.
+        newState = {
+          value: prevState.value,
+          isValid: prevState.value.includes("@"),
+        };
+      }
+
+      // reducerFn gets the current state & action and returns the newState
+      return newState;
+    },
+    // initState
+    { value: "", isValid: undefined }
+  );
+```
+`emailState` is an {} of states that contain the value and validity.
+
+The Email state value can be accessed using `emailState.value`.
+
+And the Email validity state value can be accessed using `emailState.isValid`.
+
+## Updating states using actions
+
+An **Action** is a value that is given to ReducerFn(). It is usually an object with a *type and payload*. To pass it to ReducerFn we need to use the **dispatchFn()**.
+
+In a complex reducer, the **type** is used to handle state management of different properties. The **payload** is the new value of the state of a particular property.
+
+```jsx
+const emailChangeHandler = (event) => {
+  // Update the state of email with curr input value by dispatching the action.
+    dispatchEmail({
+      type: "USER_INPUT",
+      payload: event.target.value,
+    });
+  };
+```
+
+```jsx
+const validateEmailHandler = () => {
+  // Update the state of email validity by dispatching the action.
+    dispatchEmail({
+      type: "INPUT_BLUR",
+      payload: "",
+    });
+  };
+```
+
+Now this `emailState` can be used in `useEffect()` to validate Form and make sure that the setFormIsValid() gets the most recent snapshot of the emailState.
+Also as dependency to useState to avoid running useState every time the input value changes and only run it when the validity changes.
+
+```jsx
+useEffect(() => {
+  const timer = setTimeout(() => {      
+    setFormIsValid(
+      emailState.isValid && passwordState.isValid
+    );
+  }, 500);
+
+  return () => {
+    clearTimeout(timer);
+  };
+}, [emailState.isValid, passwordState.isValid]);
+```
+
+## When to use **useReducer()** vs **useState()**
+
+### useState():
+  - Main management tool
+  - Great for independent pieces of state / data.
+  - Great if the updates are easy and limited to a few kind of updates.
+
+### useReducer():
+  - Should be considered if you have related pieces of state / data
+  - Can be helpful for more complex state updates.
+
+# Context API:
+When we want to use a state in different parts of the app, state / data is sent from the leaf of the component tree to root of the tree (Using up communication) and then sent to the required components (Using down communication). This creates a chain of state propagation which is very difficult to handle. To solve this we use **React Context**
+
+**React Context** is a component wide, behind-the-scenes **State Storage** provided by react to handle passing states without a prop-chain
+
+## Defining a **Context**
+> In *src/* create a directory *context/*
+> >
+> Create the context file. eg: *auth-context.js*
+
+```jsx
+import React from 'react';
+
+// createContext() takes in object with default state values and function ref that needs to be passed to other components.
+const AuthContext = React.createContext({
+    isLoggedIn: false,
+    onLogout : () => {}
+});
+
+export default AuthContext;
+```
+
+## **Providing** the context with **value** attr
+For a component to get access of the context, we need to **Wrap it** inside the **Provider**
+
+A provider is defined where the state is declared. It takes a **value attribute** which is an object used to **change the state inside the context**
+
+> Note: The state inside the context can also contain references to functions that can be called by child consuming elements.
+> 
+```jsx
+import AuthContext from './context/auth-context'
+
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  return (
+      <AuthContext.Provider
+        value={{ isLoggedIn: isLoggedIn, 
+            onLogout: logoutHandler }}>
+        <MainHeader/>      
+      </AuthContext.Provider>
+  );
+}
+```
+
+All the components (Children, GrandChildren, etc) inside the Provider gets the access to context.
+
+## Consuming the context
+
+### Using **Consumer**
+Using the state present in the context. To do so, wrap the component in **Consumer**
+
+**Consumer** provides an arrow function with context which can be used for the state values
+
+```jsx
+import AuthContext from "../../context/auth-context";
+
+const LogoutBtn = () => {
+return (  
+  <AuthContext.Consumer>
+    {/* Arrow Function with ctx as Context */}
+    {(ctx) => {
+      return(  
+        {/* ctx.isLoggedIn is state stored in context */}   
+        {/* ctx.onLogout is function ref stored in context */}  
+        {ctx.isLoggedIn && (
+          <button onClick={ctx.onLogout}>Logout</button>
+        )}
+      );
+    }}
+  </AuthContext.Consumer>
+);
+};
+```
+
+### Using **useContext()** Hook
+```jsx
+import {useContext} from 'react';
+import AuthContext from "../../context/auth-context";
+
+const LogoutBtn = () => {
+
+  // Define a variable to get value of the context
+  const ctx = useContext(AuthContext);
+  
+  return(  
+    {/* ctx.isLoggedIn is state stored in context */}    
+    {/* ctx.onLogout is function ref stored in context */}  
+    {ctx.isLoggedIn && (
+      <button onClick={ctx.onLogout}>Logout</button>
+    )}
+  );
+};
+```
+
+## Creating a custom context provider Component
+To keep a certain functionality available app wide, we can create a component for the Provider with states and functions that should be accessible app wide.
+
+> In *src/context/auth-context.js*
+```jsx
+import React, {useState, useEffect} from 'react';
+
+const AuthContext = React.createContext({
+    isLoggedIn: false,
+    onLogout : () => {},
+    onLogin : (email, password) => {}
+});
+
+// Named Component Export
+export const AuthContextProvider = (props) => {
+    useEffect(() => {
+        if (localStorage.getItem("isLoggedIn") === "1") setIsLoggedIn(true);
+      }, []);
+    
+
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+    const logoutHandler = () => {
+        localStorage.removeItem("isLoggedIn");
+        setIsLoggedIn(false)
+    }
+
+    const loginHandler = () => {
+        localStorage.setItem("isLoggedIn", "1");
+        setIsLoggedIn(true)
+    }
+
+    return (
+        <AuthContext.Provider
+        value={{ isLoggedIn: isLoggedIn, onLogout: logoutHandler, onLogin: loginHandler }}>
+            {props.children}
+        </AuthContext.Provider>
+    )
+}
+
+// Default Export
+export default AuthContext;
+```
+
+> Provide Context App wide - *index.js*
+
+Enclose `<App /> in <Provider>`
+
+```jsx
+// Importing named exported component
+import {AuthContextProvider} from "./context/auth-context";
+
+root.render(
+  <AuthContextProvider>
+    <App />
+  </AuthContextProvider>
+);
+```
+
+> Consume the context using useContext() hook - *App.js*
+
+```jsx
+// Importing default exported component
+import AuthContext from "./context/auth-context";
+
+function App() {
+  const ctx = useContext(AuthContext)
+
+  return (
+    <main>
+      {!ctx.isLoggedIn && <Login />}
+      {ctx.isLoggedIn && <Home />}
+    </main>
+  );
+}
+
+```
+
+## Limitations
+- Not optimized for high frequency changes i.e. frequent state changes.
+- Not a replacement of props as it will make the component non re usable.
