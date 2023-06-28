@@ -15,6 +15,10 @@ const NewExpense = (props) => {
 
   return (
     <div className="new-expense">
+      {/* 
+        Such components are called as -> *CONTROLLED COMPONENTS* 
+        - because we control the result state of the child component in the parent component
+      */}
       <ExpenseForm onSaveExpenseData={saveExpenseDataHandler} />
     </div>
   );
