@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./ExpenseForm.css";
 
-const ExpenseForm = () => {
+const ExpenseForm = (props) => {
   // Individual states - declaration
   const [enteredTitle, setEnteredTitle] = useState("");
   const [enteredAmount, setEnteredAmount] = useState("");
@@ -50,7 +50,9 @@ const ExpenseForm = () => {
       date: new Date(enteredDate),
     };
 
-    console.log(expenseData);
+    // Bottom-up communication, sending the data to parent component (using props)
+    props.onSaveExpenseData(expenseData);
+
     // Reset input fields to blank
     setEnteredAmount("");
     setEnteredTitle("");
