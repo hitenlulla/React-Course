@@ -20,6 +20,8 @@ function Expenses(props) {
       />
       {/* Rendering Lists using map() */}
       {props.expenses.map((expense) => (
+        // Every list rendered item should have a unique key prop.
+        // This is to avoid component overwriting and state collision
         <ExpenseItem key={expense.id} expense={expense} />
       ))}
     </Card>
