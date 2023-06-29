@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./Expenses.css";
-import ExpenseItem from "./ExpenseItem";
+import ExpensesList from "./ExpensesList";
 import Card from "../UI/Card";
 import ExpensesFilter from "./ExpensesFilter";
 // props is used to pass parameters into children components
@@ -12,18 +12,18 @@ function Expenses(props) {
     setFilteredYear(selectedYear);
   };
 
+  const filteredExpenses = props.expenses.filter((expense) => {
+    return expense.date.getFullYear().toString() === filteredYear;
+  });
+
   return (
     <Card className="expenses">
       <ExpensesFilter
         selected={filteredYear}
         onChangeFilter={filterChangeHandler}
       />
-      {/* Rendering Lists using map() */}
-      {props.expenses.map((expense) => (
-        // Every list rendered item should have a unique key prop.
-        // This is to avoid component overwriting and state collision
-        <ExpenseItem key={expense.id} expense={expense} />
-      ))}
+
+      <ExpensesList expenses={filteredExpenses} />
     </Card>
   );
 }
