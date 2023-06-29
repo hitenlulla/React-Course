@@ -18,11 +18,10 @@ function Expenses(props) {
         selected={filteredYear}
         onChangeFilter={filterChangeHandler}
       />
-      {/* Access data coming into props using '.' notation */}
-      <ExpenseItem expense={props.expenses[0]} />
-      <ExpenseItem expense={props.expenses[1]} />
-      <ExpenseItem expense={props.expenses[2]} />
-      <ExpenseItem expense={props.expenses[3]} />
+      {/* Rendering Lists using map() */}
+      {props.expenses.map((expense) => (
+        <ExpenseItem key={expense.id} expense={expense} />
+      ))}
     </Card>
   );
 }
