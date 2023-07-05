@@ -2,7 +2,7 @@ import UserForm from "./components/UserForm/UserForm";
 import List from "./components/UI/List/List";
 import Modal from "./components/UI/Modal/Modal";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 
 function App() {
   const [users, setUsers] = useState([]);
@@ -30,13 +30,17 @@ function App() {
   };
 
   return (
-    <div>
+    // Use fragments to wrap components - This is done to avoid div-soup
+    <Fragment>
+      {/* The modal should not be rendered inside a component, it should be at the top of the DOM
+        Hence we use portals to portal this out to the DOM. Portal is defined in the component
+      */}
       {!isUserValid && (
         <Modal errorMessage={errorMessage} onClosePrompt={resetValidity} />
       )}
       <UserForm onAddUser={addUser} />
       {users.length > 0 && <List users={users} />}
-    </div>
+    </Fragment>
   );
 }
 
