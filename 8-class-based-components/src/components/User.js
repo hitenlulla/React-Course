@@ -8,6 +8,10 @@ const User = (props) => {
 */
 
 class User extends Component {
+  componentWillUnmount() {
+    console.log("User component Unmounted");
+  }
+
   render() {
     // props is recieved in `this` object of Component class
     return <li className={classes.user}>{this.props.name}</li>;
