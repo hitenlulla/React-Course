@@ -69,6 +69,10 @@
   - [Creating a custom context provider Component](#creating-a-custom-context-provider-component)
     - [Limitations](#limitations)
 - [Forwarded Refs](#forwarded-refs)
+- [React Optimization techniques](#react-optimization-techniques)
+    - [React Memo](#react-memo)
+    - [useCallback hook](#usecallback-hook)
+    - [useMemo hook](#usememo-hook)
 
 # Introduction
 1. #### What is **React** ?
@@ -2080,3 +2084,80 @@ if (!emailState.isValid) {
     onBlur={validateEmailHandler}
 />
 ```
+# React Optimization techniques
+We know that when state of any component changes, it re-renders the component.
+Incase of a component tree where a parent component has a big branch of children, if the parent component re-renders, all the direct and indirect children components will be re-rendered. Re-rendering is not optimal if there is no change in children component DOM.
+
+Hence to avoid rendering of a component we can use
+### React Memo
+> React.memo()
+>
+> This takes a react component function as a input
+> And only renders this component if there has been a change in the incoming props
+
+```jsx
+import React from 'react';
+
+import classes from './Button.module.css';
+
+const Button = (props) => {
+  console.log('Button RUNNING');
+  return (
+    <button
+      type={props.type || 'button'}
+      className={`${classes.button} ${props.className}`}
+      onClick={props.onClick}
+      disabled={props.disabled}
+    >
+      {props.children}
+    </button>
+  );
+};
+
+// Enclosing a react component in React.memo() makes sure 
+// that this component only gets rendered, when there is a change in incoming props
+export default React.memo(Button);
+```
+
+But when the parent component that uses this button renders, the onClick listener defined in the parent will be recreated. That is, a new function reference will be created, and sending this reference as a prop will still render the `<Button>` component.
+
+Hence to avoid recreation of such functions we use
+### useCallback hook
+> useCallback()
+>
+> Which takes the function that needs to be stored in memory of react, 
+> and not get defined again when the component renders due to state change
+>
+> It also takes a second parameter which is the dependency array, which defines when the function should be recreated
+
+```jsx
+const buttonClickListener = useCallback(() => {
+    setListTitle("New Title");
+  }, []);
+```
+
+Now when the parent is rendered, this function's reference will still remain the same, inturn no rendering the button component again.
+
+Now consider that the `<Button>` component takes an array (or object) as a prop, when the parent is re-rendered, the reference to this array will change which will render the Button component again.
+
+To fix this we can use
+### useMemo hook
+> useMemo()
+>
+> It takes a function which returns data, this data will be stored in memory of react, and not get defined again when component renders due to state change 
+> 
+> And a dependency array which will tell when to render this data again.
+
+```jsx
+// example: Without dependency
+// Do not create a new array when this component is rendered
+const listItems = useMemo(() => [5, 3, 1, 10, 9], []);
+
+// Example: With dependency
+// sort the elements only if there is change to the incoming items
+const sortedList = useMemo(() => {
+    return items.sort((a, b) => a - b);
+  }, [items]);
+```
+
+Using all three optimizers in conjunction helps us to avoid unwanter component and function, array, objects re-rendering
