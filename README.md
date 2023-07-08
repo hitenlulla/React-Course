@@ -67,7 +67,8 @@
     - [Using **Consumer**](#using-consumer)
     - [Using **useContext()** Hook](#using-usecontext-hook)
   - [Creating a custom context provider Component](#creating-a-custom-context-provider-component)
-  - [Limitations](#limitations)
+    - [Limitations](#limitations)
+- [Forwarded Refs](#forwarded-refs)
 
 # Introduction
 1. #### What is **React** ?
@@ -2009,6 +2010,73 @@ function App() {
 
 ```
 
-## Limitations
+### Limitations
 - Not optimized for high frequency changes i.e. frequent state changes.
 - Not a replacement of props as it will make the component non re usable.
+  
+# Forwarded Refs
+React does not allows us to assign refs to custom components (directly)
+But there will be cases when we want to access the DOM of our component
+To assign refs, react provides us with
+> React.forwardRef((props, forwardedRef) => {})
+>
+> forwardRef takes the React component function as parameter and also provides the forwarded ref to it
+
+Consider building an Input component which needs to be focused from the parent component
+
+`To expose the focus() of html:<input> we use the useImperativeHandle React Hook`
+```jsx
+const Input = React.forwardRef((props, forwardedRef) => {
+  const inputRef = useRef();
+  
+  const activate = () => {
+    inputRef.current.focus();
+  };
+  
+  // Used to expose the activate function to forwadrding component as focus()
+  useImperativeHandle(forwardedRef, () => {
+    return {
+      focus: activate,
+    };
+  });
+
+  return (
+    <div
+      className={`${classes.control} ${
+        props.isValid === false ? classes.invalid : ""
+      }`}
+    >
+      <label htmlFor={props.id}>{props.label}</label>
+      <input
+        ref={inputRef}
+        type={props.type}
+        id={props.id}
+        value={props.value}
+        onChange={props.onChange}
+        onBlur={props.onBlur}
+      />
+    </div>
+  );
+});
+
+export default Input;
+```
+`To access the html:<input> inside Component:<Input> we forward a ref`
+
+```jsx
+const emailRef = useRef();
+if (!emailState.isValid) {
+      // We can use focus() because it is exposed by useImperativeHandle hook
+      emailRef.current.focus();
+}
+
+<Input
+    ref={emailRef}
+    id="email"
+    label="Email"
+    type="email"
+    isValid={emailState.isValid}
+    onChange={emailChangeHandler}
+    onBlur={validateEmailHandler}
+/>
+```
