@@ -77,4 +77,19 @@ function App() {
   );
 }
 
+/** To POST a data to a server do the following*/
+// ! We cannot post data to swapi hence just the implementation v
+async function addMovie(movie) {
+  const response = await fetch("https://swapi.dev/api/films", {
+    method: "POST",
+    body: JSON.stringify(movie),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+  console.log("Movie Added");
+}
+
 export default App;
