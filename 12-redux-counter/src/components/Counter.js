@@ -2,12 +2,16 @@ import React from "react";
 import classes from "./Counter.module.css";
 
 import { useSelector, useDispatch } from "react-redux";
-import { counterActions } from "../store/index";
+import { counterActions } from "../store/counter";
 
 const Counter = () => {
   // Subscribing to redux store & Extracting values of redux states
-  const counter = useSelector((state) => state.counter);
-  const showCounter = useSelector((state) => state.showCounter);
+  // const counter = useSelector((state) => state.counter);
+  // const showCounter = useSelector((state) => state.showCounter);
+
+  // Subscribing to redux toolkit store & Extracting values of redux states
+  const counter = useSelector((state) => state.counter.counter);
+  const showCounter = useSelector((state) => state.counter.showCounter);
 
   // Get the redux dispatch function
   const dispatch = useDispatch();
