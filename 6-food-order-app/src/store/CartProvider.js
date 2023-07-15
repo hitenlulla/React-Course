@@ -53,6 +53,11 @@ const cartReducer = (state, action) => {
       totalAmount: updatedTotalAmount,
     };
   }
+
+  if (action.type === "RESET") {
+    return defaultCartState;
+  }
+
   return defaultCartState;
 };
 
@@ -79,12 +84,18 @@ export default function CartProvider(props) {
       id: id,
     });
   };
+  const resetCartHandler = () => {
+    dispatchCartAction({
+      type: "RESET",
+    });
+  };
 
   const cartContextValue = {
     items: cartState.items,
     totalAmount: cartState.totalAmount,
     addItem: addItemToCartHandler,
     removeItem: removeItemFromCartHandler,
+    resetCart: resetCartHandler,
   };
 
   return (
