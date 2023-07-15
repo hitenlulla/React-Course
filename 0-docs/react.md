@@ -70,6 +70,14 @@
     - [useCallback hook](#usecallback-hook)
     - [useMemo hook](#usememo-hook)
 - [Building custom hooks](#building-custom-hooks)
+    - [Why do we need cusom hooks?](#why-do-we-need-cusom-hooks)
+- [Sending HTTP requests](#sending-http-requests)
+    - [Sending a GET request](#sending-a-get-request)
+    - [Sending a POST request.](#sending-a-post-request)
+    - [custom HTTP hook for all types of requests](#custom-http-hook-for-all-types-of-requests)
+      - [Creating useHTTP hook](#creating-usehttp-hook)
+      - [Using useHTTP hook to GET](#using-usehttp-hook-to-get)
+      - [Using useHTTP hook to POST](#using-usehttp-hook-to-post)
 
 # Introduction
 1. #### What is **React** ?
@@ -2047,3 +2055,241 @@ const sortedList = useMemo(() => {
 Using all three optimizers in conjunction helps us to avoid unwanter component and function, array, objects re-rendering
 
 # Building custom hooks
+### Why do we need cusom hooks?
+
+Custom hooks are JS functions that are used to outsource stateful logic to various components
+
+Example: Consider an input field where we need to validate the input field as follows
+
+This hook should only notify the following
+1. If a user touched the field and left it without typing
+2. If a user adds an invalid value
+3. If user leaves the input blank
+4. The entered value
+
+Such hook can be created as follows
+```jsx
+import { useState } from "react";
+
+// Takes a function as input which will be run to validate the input value
+const useInput = (validateValue) => {
+  // States to get the entered value and to know if input was touched
+  const [enteredValue, setEnteredValue] = useState("");
+  const [isTouched, setIsTouched] = useState(false);
+
+  // Derived states to check if the name input field is valid, derived from above states
+  const isValueValid = validateValue(enteredValue);
+  const hasError = !isValueValid && isTouched;
+
+  const inputChangeHandler = (event) => {
+    setEnteredValue(event.target.value);
+    setIsTouched(true);
+  };
+
+  const inputBlurHandler = () => {
+    setIsTouched(true);
+  };
+
+  const reset = () => {
+    setEnteredValue("");
+    setIsTouched(false);
+  };
+  return {
+    enteredValue,
+    isValueValid,
+    hasError,
+    inputChangeHandler,
+    inputBlurHandler,
+    reset,
+  };
+};
+
+export default useInput;
+```
+
+The purpose of this **useInput** hook is to only notify user about the changes in state of the input field.
+
+Using the hook:
+```jsx
+import useInput from "../../hooks/use-input";
+const Form = (props) => { 
+  // Validator function
+  const nameValidator = (name) => !isEmpty(name)
+
+  // Hook implementation
+  const {
+      enteredValue: enteredName,
+      isValueValid: isNameValid,
+      hasError: NameHasError,
+      inputChangeHandler: NameInputChangeHandler,
+      inputBlurHandler: NameInputBlurHandler,
+      reset: resetNameInput,
+    } = useInput(nameValidator);
+
+  /*
+    Now the enteredName, isNameValid, NameHasError can be used to get the value and validate the form here. 
+    NameInputChangeHandler and NameInputBlurHandler can be used for onProps in the <input> 
+    reset can be used to reset the enteredValue to ''
+  */
+
+  return (
+    <form onSubmit={confirmHandler}>
+      <div>
+        <label htmlFor="name">Your Name </label>
+        {NameHasError && (
+          <p>Name cannot be blank</p>
+        )}
+        <input
+          type="text"
+          id="name"
+          onChange={NameInputChangeHandler}
+          onBlur={NameInputBlurHandler}
+          value={enteredName}
+        />
+      </div>
+      <button>Confirm</button>
+    </form>
+  )
+}
+```
+
+# Sending HTTP requests
+**NOTE**: Sending HTTP request is a side-effect. Hence should be used inside a useEffect(). And the requests should always be asynchronous.
+
+Sending HTTP requests to change a component on change in state of some other component can cause infinite rendering.
+
+### Sending a GET request
+```jsx
+function App(){
+  const fetchMoviesHandler = async () => {
+    try {
+      const response = await fetch(
+        "http://this-is-a-dummy-url.com"
+      );
+      if (!response.ok) {
+        throw new Error("Something went wrong!");
+      }
+
+      const data = await response.json();
+      console.log("Movies", data)
+    } catch (error) {
+      console.error("Failed to fetch movies due to", error)
+    }
+  };
+}
+```
+
+### Sending a POST request.
+```jsx
+function App(){
+  const sendMovieHandler = async (data) => {
+    try {
+      const response = await fetch(
+        "http://this-is-a-dummy-url.com",
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to send cart data");
+      }
+      console.log("Added Movie successfully")
+    } catch (error) {
+      console.error("Failed to send movies due to", error)
+    }
+  };
+}
+```
+
+### custom HTTP hook for all types of requests
+#### Creating useHTTP hook
+```jsx
+import { useState, useCallback } from "react";
+
+const useHttp = () => {
+  // State to handle loading state
+  const [isLoading, setIsLoading] = useState(false);
+  // State to handle errors if any
+  const [error, setError] = useState(null);
+
+  // Requesting function that takes the request {} and responseHandler()
+  const sendRequest = useCallback(async (request, responseHandler) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(request.url, {
+        method: request.method ? request.method : "GET",
+        headers: request.headers ? request.headers : {},
+        body: request.body ? JSON.stringify(request.body) : null,
+      });
+
+      if (!response.ok) {
+        throw new Error("Request failed!");
+      }
+
+      const data = await response.json();
+      responseHandler(data);
+    } catch (err) {
+      setError(err.message || "Something went wrong!");
+    }
+    setIsLoading(false);
+  }, []);
+  return { isLoading, error, sendRequest };
+};
+
+export default useHttp;
+```
+
+#### Using useHTTP hook to GET
+```jsx
+import useHttp from "../../hooks/use-http";
+function App(){
+  const { isLoading, error, sendRequest } = useHttp();
+
+  const responseHandler = (response) => {
+    const task = { id: response.id, text: response.task };
+    console.log("Fetched task", task)
+  };
+
+  sendRequest(
+    {
+      url: "https://react-http-5463b-default-rtdb.firebaseio.com/tasks.json",
+      method: "GET",
+    },responseHandler);
+  
+  return (
+      {isLoading && <p>Request in process</p>}
+      {error && <p>{error}</p>}
+  );
+}
+```
+
+#### Using useHTTP hook to POST
+```jsx
+import useHttp from "../../hooks/use-http";
+function App(){
+  const { isLoading, error, sendRequest } = useHttp();
+
+  const responseHandler = (response) => {
+    const createdTask = { id: response.id, text: response.task };
+    console.log("Added a new task", createdTask)
+  };
+
+  sendRequest(
+    {
+      url: "https://react-http-5463b-default-rtdb.firebaseio.com/tasks.json",
+      method: "POST",
+      body: JSON.stringify({ text: taskText }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },responseHandler);
+  
+  return (
+      {isLoading && <p>Request in process</p>}
+      {error && <p>{error}</p>}
+  );
+}
+```
