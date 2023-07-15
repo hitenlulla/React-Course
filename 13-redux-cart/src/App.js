@@ -3,9 +3,10 @@ import Layout from "./components/Layout/Layout";
 import Products from "./components/Shop/Products";
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { uiActions } from "./store/ui-slice";
+// import { uiActions } from "./store/ui-slice";
 import Notification from "./components/UI/Notification";
 import React, { Fragment } from "react";
+import { sendCartData } from "./store/cart-slice";
 
 // Global var Used to handle the edge case of always sending cart data even on first render
 // Using global var because it's value will not be re-rendered
@@ -18,10 +19,12 @@ function App() {
   // Consider the example of storing the cart in the backend, so user does not looses the cart when he reloads
   // This can be done in the component itself, as follows
   // Get the entire instance of cart from the redux store -> This will be added as our dependency in useEffect
+
   const cart = useSelector((state) => state.cart);
   const dispatch = useDispatch();
 
   useEffect(() => {
+    /* Defining side effects in components
     const sendCartData = async () => {
       dispatch(
         uiActions.showNotification({
@@ -64,6 +67,14 @@ function App() {
         })
       );
     });
+    */
+    if (isInitialRender) {
+      isInitialRender = false;
+      return;
+    }
+
+    // Using action thunks for side-effects in redux
+    dispatch(sendCartData(cart));
   }, [cart, dispatch]);
 
   const notification = useSelector((state) => state.ui.notification);
