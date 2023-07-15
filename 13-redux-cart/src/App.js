@@ -6,7 +6,7 @@ import { useEffect } from "react";
 // import { uiActions } from "./store/ui-slice";
 import Notification from "./components/UI/Notification";
 import React, { Fragment } from "react";
-import { sendCartData } from "./store/cart-slice";
+import { fetchCartData, sendCartData } from "./store/cart-thunks";
 
 // Global var Used to handle the edge case of always sending cart data even on first render
 // Using global var because it's value will not be re-rendered
@@ -22,6 +22,10 @@ function App() {
 
   const cart = useSelector((state) => state.cart);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchCartData());
+  }, [dispatch]);
 
   useEffect(() => {
     /* Defining side effects in components
@@ -73,8 +77,10 @@ function App() {
       return;
     }
 
-    // Using action thunks for side-effects in redux
-    dispatch(sendCartData(cart));
+    if (cart.changedLocally) {
+      // Using action thunks for side-effects in redux
+      dispatch(sendCartData(cart));
+    }
   }, [cart, dispatch]);
 
   const notification = useSelector((state) => state.ui.notification);
