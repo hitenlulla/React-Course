@@ -1,5 +1,6 @@
 # Redux - App-wider state management
 - [Redux - App-wider state management](#redux---app-wider-state-management)
+  - [Installing redux](#installing-redux)
   - [Creating a redux slice](#creating-a-redux-slice)
   - [Configuring a redux store with slices](#configuring-a-redux-store-with-slices)
   - [Providing the store app-wide](#providing-the-store-app-wide)
@@ -31,10 +32,14 @@ root.render(
 
 This is not not easily maintenable, hence we use redux. A JS library that deals with creating app wide contexts easily using the concept of redux slices and provided only once to the entire App
 
+## Installing redux
+> npm install @reduxjs/toolkit react-redux
+
 ## Creating a redux slice
 > In **store/** create a file *counter.js* : This will have the context for the counter
 
 ```js
+import { createSlice } from "@reduxjs/toolkit";
 // creating a slice
 // A slice helps to store states and reducer of a type - used to maintain when redux starts handling lot of states
 const counterSlice = createSlice({
