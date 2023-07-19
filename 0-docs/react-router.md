@@ -38,6 +38,14 @@
   - [Defered Loader](#defered-loader)
     - [defered preference](#defered-preference)
   - [Route Authentication](#route-authentication)
+    - [Login \& Logout routes](#login--logout-routes)
+    - [Login / Signup form](#login--signup-form)
+    - [Login action](#login-action)
+    - [Logout action](#logout-action)
+    - [Sharing token to routes](#sharing-token-to-routes)
+    - [Accessing shared token on individual routes UI \& actions](#accessing-shared-token-on-individual-routes-ui--actions)
+    - [Route protection](#route-protection)
+    - [Auto Logout on token expiration](#auto-logout-on-token-expiration)
 
 
 In an ideal webserver, different HTML files are served for different routes
@@ -1289,3 +1297,408 @@ export async function loader({ request, params }) {
 ## Route Authentication 
 To authenticate routes we will use a means of authentication token, this token will be generated from the backend and will be stored in the front end, and will be applied while accessing a restricted route.
 
+### Login & Logout routes
+> in router.js
+```js
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <Error />,
+    children: [
+      { index: true, element: <HomePage /> },
+      .
+      .
+      .
+      {
+        path: "auth",
+        element: <AuthenticationPage />,
+        action: authAction,
+      },
+      {
+        path: "logout",
+        action: logoutAction,
+      },
+    ],
+  },
+]); 
+```
+
+### Login / Signup form
+```jsx
+export default function AuthForm() {
+  // Retrieving query parameters, to toggle between login mode or signup mode
+  const [searchParams] = useSearchParams();
+  const isLogin = searchParams.get("mode") === "login";
+
+  // Get response from action: showing errors on screen
+  const data = useActionData();
+
+  // Get form submission state
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+
+  return (
+    <>
+      <Form method="post" className={classes.form}>
+        <h1>{isLogin ? "Log in" : "Create a new user"}</h1>
+        {/* Display errors coming in response */}
+        {data && data.errors && (
+          <ul>
+            {Object.values(data.errors).map((err) => (
+              <li key={err}>{err}</li>
+            ))}
+          </ul>
+        )}
+
+        {/* Show acknowledgement / error message */}
+        {data && data.message && <p>{data.message}</p>}
+        <p>
+          <label htmlFor="email">Email</label>
+          <input id="email" type="email" name="email" required />
+        </p>
+        <p>
+          <label htmlFor="image">Password</label>
+          <input id="password" type="password" name="password" required />
+        </p>
+        <div className={classes.actions}>
+          
+          {/* Setting query parameters */}
+          <Link to={`?mode=${isLogin ? "signup" : "login"}`}>
+            {isLogin ? "Create new user" : "Login"}
+          </Link>
+          
+          {/* Disable submit button if the form is still submitting */}
+          <button disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Save"}
+          </button>
+        </div>
+      </Form>
+    </>
+  );
+}
+```
+
+### Login action
+> Helper functions
+```js Helper Functions
+// Check if token is expired
+export function getTokenDuration() {
+  const storedExpiration = new Date(localStorage.getItem("expiration"));
+  const now = new Date();
+
+  const duration = storedExpiration.getTime() - now.getTime();
+  return duration;
+}
+
+export function getAuthToken() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    return null;
+  }
+
+  const tokenDuration = getTokenDuration();
+  if (tokenDuration < 0) {
+    return "EXPIRED";
+  }
+
+  return token;
+}
+
+export function tokenLoader() {
+  return getAuthToken();
+}
+```
+
+> Action
+```js
+export async function action({ request }) {
+  // Getting the user input data from auth form
+  const data = await request.formData();
+  const authData = {
+    email: data.get("email"),
+    password: data.get("password"),
+  };
+
+  // Fetching query params: to know if this is routed to login or signup
+  // NOTE: URL() is a browser function
+  const searchParams = new URL(request.url).searchParams;
+  const mode = searchParams.get("mode") || "login";
+
+  if (mode !== "login" && mode !== "signup") {
+    throw json({ message: "Unsupported mode" }, { status: 422 });
+  }
+
+  // login / signup request to backend for auth-token
+  const response = await fetch("http://localhost:8080/" + mode, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(authData),
+  });
+
+  // Invalid request body
+  if (response.status === 422 || response.status === 401) {
+    // Show the error on UI
+    return response;
+  }
+
+  if (!response.ok) {
+    throw json({ message: "Could not authenticate user" }, { status: 500 });
+  }
+
+  //Extract and Store the token recieved in response
+  const resData = await response.json();
+  const token = resData.token;
+  localStorage.setItem("token", token);
+
+  // Store the expiration time to current time + 1 hrs
+  const expiration = new Date();
+  expiration.setHours(expiration.getHours() + 1);
+  console.log(expiration);
+  localStorage.setItem("expiration", expiration.toISOString());
+
+  return redirect("/");
+}
+```
+
+### Logout action
+```js
+import { redirect } from "react-router-dom";
+
+export function action() {
+  // Delete the stored token and expiration time
+  localStorage.removeItem("token");
+  localStorage.removeItem("expiration");
+  return redirect("/");
+}
+```
+
+### Sharing token to routes
+> in router.js
+```js #6-10
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <Error />,
+    // Sharing the token to all the routes using id+loader
+    // Whenever any navigation occurs, this loader will be loaded - 
+    // hence when user logs in, all the routes will have the token
+    id: "root",
+    loader: tokenLoader,
+    children: [
+      { index: true, element: <HomePage /> },
+      {
+        path: "events",
+        element: <EventsRoot />,
+        children: [
+          {
+            index: true,
+            element: <EventsPage />,
+            loader: eventsLoader,
+          },
+          {
+            path: ":id",
+            id: "event-details",
+            loader: eventDetailLoader,
+            children: [
+              {
+                index: true,
+                element: <EventDetailPage />,
+                action: delteEventAction,
+              },
+              {
+                path: "edit",
+                element: <EditEventPage />,
+                action: eventAddUpdateAction,
+              },
+            ],
+          },
+          {
+            path: "new",
+            element: <NewEventPage />,
+            action: eventAddUpdateAction,
+          },
+        ],
+      },
+    ],
+  },
+]); 
+```
+
+### Accessing shared token on individual routes UI & actions
+> In event-details component: hiding, edit and delete buttons based on availability of token
+```jsx #13-19
+export default function EventItem({ event }) {
+  const submit = useSubmit();
+  
+  // Get the login token from the share root loader
+  const token = useRouteLoaderData("root");
+
+  return (
+    <article className={classes.event}>
+      <img src={event.image} alt={event.title} />
+      <h1>{event.title}</h1>
+      <time>{event.date}</time>
+      <p>{event.description}</p>
+      
+      {/* Only show action buttons ,If token is available */}
+      {token && (
+        <menu className={classes.actions}>
+          <Link to="edit">Edit</Link>
+          <button onClick={startDeleteHandler}>Delete</button>
+        </menu>
+      )}
+
+    </article>
+  );
+}
+```
+
+> In route actions when we call the API
+> We cannot use the useRouteLoaderData hook in the action component, hence we use the helper functions
+> to get the token directly from localStorage
+```js
+export async function action({ request, params }) {
+  const id = params.id;
+  // Get the stored auth token for restricted delete action
+  const token = getAuthToken();
+
+  const response = await fetch("http://localhost:8080/events/" + id, {
+    method: request.method,
+    // Send the token as a Authorization Bearer token 
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  });
+
+  if (response.status === 401 || response.status === 422) {
+    return response;
+  }
+  if (!response.ok) {
+    throw json({ message: "Could not delete event" }, { status: 500 });
+  }
+  return redirect("/events");
+}
+
+```
+
+### Route protection
+Even if we hide the routes from the user on UI, the user can manually enter the routes on the browser's URL bar and access it, hence we need to protect the routes and redirect the user to login page if the route is auth-protected.
+
+To do this we can add a loader to these routes which will check if token is present or not
+
+```js
+// Protecting a route by checking if user is not logged in, redirect user to login page
+export function checkAuthLoader() {
+  const token = getAuthToken();
+
+  if (!token) {
+    return redirect("/auth?mode=login");
+  }
+
+  // Loader should always return something
+  return null;
+}
+```
+
+> Updated router
+```js
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <Error />,
+    // Sharing the token to all the routes using id+loader
+    // Whenever any navigation occurs, this loader will be loaded - 
+    // hence when user logs in, all the routes will have the token
+    id: "root",
+    loader: tokenLoader,
+    children: [
+      { index: true, element: <HomePage /> },
+      {
+        path: "events",
+        element: <EventsRoot />,
+        children: [
+          {
+            index: true,
+            element: <EventsPage />,
+            loader: eventsLoader,
+          },
+          {
+            path: ":id",
+            id: "event-details",
+            loader: eventDetailLoader,
+            children: [
+              {
+                index: true,
+                element: <EventDetailPage />,
+                action: delteEventAction,
+              },
+              {
+                path: "edit",
+                element: <EditEventPage />,
+                action: eventAddUpdateAction,
+                loader: checkAuthLoader, // route protection loader
+              },
+            ],
+          },
+          {
+            path: "new",
+            element: <NewEventPage />,
+            action: eventAddUpdateAction,
+            loader: checkAuthLoader, // route protection loader
+          },
+        ],
+      },
+    ],
+  },
+]); 
+```
+
+### Auto Logout on token expiration
+To do this, we need to keep a track of the expiration duration hence we store the expiration duration when user logs in.
+
+To do this, we need to run the timeout on a page that is always present on the screen i.e. RootLayout
+>in RootPage
+```js
+export default function RootLayout() {
+  // Get the token from the shared loader
+  const token = useLoaderData();
+  const submit = useSubmit();
+
+  useEffect(() => {
+    // If not logged in, return
+    if (!token) {
+      return;
+    }
+
+    // Token already expired
+    if (token === "EXPIRED") {
+      // programatically submit to logout route
+      submit(null, { action: "/logout", method: "POST" });
+      return;
+    }
+
+    // Extract the tokenDuration
+    const tokenDuration = getTokenDuration();
+    // set a timeout for the tokenDuration
+    setTimeout(() => {
+      // programatically submit to logout route once the timeout expires
+      submit(null, { action: "/logout", method: "POST" });
+    }, tokenDuration);
+  }, [token, submit]);
+
+  return (
+    <>
+      <MainNavigation />
+      <main>
+        <Outlet />
+      </main>
+    </>
+  );
+}
+```
