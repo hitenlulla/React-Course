@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 function EventsPage() {
   const data = useLoaderData();
-  console.log(data.events);
   return (
     <>
       <h1 style={{ textAlign: "center" }}>All Events</h1>
