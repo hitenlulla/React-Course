@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 
 import classes from "./EventForm.module.css";
+import { getAuthToken } from "../utils/auth";
 
 function EventForm({ method, event }) {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ function EventForm({ method, event }) {
           ))}
         </ul>
       )}
+      {data && data.message}
       <p>
         <label htmlFor="title">Title</label>
         <input
@@ -96,28 +98,26 @@ export async function action({ request, params }) {
     url = "http://localhost:8080/events/" + params.id;
   }
 
-  console.log(url);
+  const token = getAuthToken();
 
   const response = await fetch(url, {
     method: request.method,
     headers: {
       "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
     },
     body: JSON.stringify(eventData),
   });
 
   // User Input validation
-  if (response.status === 422) {
+  if (response.status === 422 || response.status === 401) {
     // Return the response coming from server
     // This value will be grasped by Form using useActionData() hook
     return response;
   }
 
   if (!response.ok) {
-    throw json(
-      { message: "Could not send details for the new event" + response.status },
-      { status: 500 }
-    );
+    throw json({ message: "Could not edit event" }, { status: 500 });
   }
 
   // redirect to another route when form is submitted

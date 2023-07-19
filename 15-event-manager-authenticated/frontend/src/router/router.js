@@ -15,12 +15,19 @@ import { loader as eventDetailLoader } from "../pages/EventDetails";
 import { action as eventAddUpdateAction } from "../components/EventForm";
 import { action as delteEventAction } from "../pages/EventDetails";
 import { action as newsletterAction } from "../pages/Newsletter";
+import { action as authAction } from "../pages/Authentication";
+import { action as logoutAction } from "../pages/Logout";
+import { tokenLoader } from "../utils/auth";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
     errorElement: <Error />,
+    // Sharing the token to all the routes using id+loader
+    // Whenever any navigation occurs, this loader will be loaded - hence when user logs in, all the routes will have the token
+    id: "root",
+    loader: tokenLoader,
     children: [
       { index: true, element: <HomePage /> },
       {
@@ -65,6 +72,11 @@ const router = createBrowserRouter([
       {
         path: "auth",
         element: <AuthenticationPage />,
+        action: authAction,
+      },
+      {
+        path: "logout",
+        action: logoutAction,
       },
     ],
   },

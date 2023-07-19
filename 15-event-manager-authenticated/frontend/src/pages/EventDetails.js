@@ -8,10 +8,12 @@ import {
 } from "react-router-dom";
 import EventItem from "../components/EventItem";
 import EventsList from "../components/EventsList";
+import { getAuthToken } from "../utils/auth";
 
 export default function EventDetailsPage() {
   // Reading from a shared loader
   const data = useRouteLoaderData("event-details");
+
   return (
     <>
       {/* Every defered component has it's own Suspense-Await block */}
@@ -52,7 +54,6 @@ async function loadEventDetail(id) {
 // Load all events
 async function loadAllEvents() {
   const response = await fetch("http://localhost:8080/events");
-  console.log(response);
   if (!response.ok) {
     throw json({ message: "could not fetch events" }, { status: 500 });
   } else {
@@ -71,15 +72,21 @@ export async function loader({ request, params }) {
 
 export async function action({ request, params }) {
   const id = params.id;
+  // Get the stored auth token for restricted delete action
+  const token = getAuthToken();
+
   const response = await fetch("http://localhost:8080/events/" + id, {
     method: request.method,
+    headers: {
+      Authorization: "Bearer " + token,
+    },
   });
 
+  if (response.status === 401 || response.status === 422) {
+    return response;
+  }
   if (!response.ok) {
-    throw json(
-      { message: "Could not fetch details for the selected event" },
-      { status: 500 }
-    );
+    throw json({ message: "Could not delete event" }, { status: 500 });
   }
   return redirect("/events");
 }

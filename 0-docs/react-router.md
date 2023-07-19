@@ -17,6 +17,7 @@
     - [Linking to a dynamic routes using parameters](#linking-to-a-dynamic-routes-using-parameters)
     - [Linking Relative Paths](#linking-relative-paths)
     - [Linking back to parent route](#linking-back-to-parent-route)
+    - [Route query parameters](#route-query-parameters)
   - [Route Data Loaders](#route-data-loaders)
     - [Loader function declaration and Loader data consumption](#loader-function-declaration-and-loader-data-consumption)
     - [Route loader mapping](#route-loader-mapping)
@@ -36,6 +37,7 @@
   - [Fetcher](#fetcher)
   - [Defered Loader](#defered-loader)
     - [defered preference](#defered-preference)
+  - [Route Authentication](#route-authentication)
 
 
 In an ideal webserver, different HTML files are served for different routes
@@ -385,6 +387,48 @@ But this will always go back to the parent route, if we want to go back to the p
 
 ```jsx
 <Link to=".." relative='path'>products</Link>
+```
+
+### Route query parameters
+We can programatically also add and fetch query parameters to the routes we want to navigate to, using searchParams() hook provided by react-router-dom
+```jsx
+import { Form, Link, useSearchParams } from "react-router-dom";
+
+import classes from "./AuthForm.module.css";
+
+function AuthForm() {
+  // Retrieving query parameters
+  const [searchParams] = useSearchParams();
+  const isLogin = searchParams.get("mode") === "login";
+
+  return (
+    <>
+      <Form method="post" className={classes.form}>
+        <h1>{isLogin ? "Log in" : "Create a new user"}</h1>
+        <p>
+          <label htmlFor="email">Email</label>
+          <input id="email" type="email" name="email" required />
+        </p>
+        <p>
+          <label htmlFor="image">Password</label>
+          <input id="password" type="password" name="password" required />
+        </p>
+        <div className={classes.actions}>
+
+          {/* Adding query parameters to route */}
+          {/* '?mode=login' or '?mode=signup' */}
+          <Link to={`?mode=${isLogin ? "signup" : "login"}`}>
+            {isLogin ? "Create new user" : "Login"}
+          </Link>
+
+          <button>Save</button>
+        </div>
+      </Form>
+    </>
+  );
+}
+
+export default AuthForm;
 ```
 
 ## Route Data Loaders
@@ -1241,3 +1285,7 @@ export async function loader({ request, params }) {
   });
 }
 ```
+
+## Route Authentication 
+To authenticate routes we will use a means of authentication token, this token will be generated from the backend and will be stored in the front end, and will be applied while accessing a restricted route.
+

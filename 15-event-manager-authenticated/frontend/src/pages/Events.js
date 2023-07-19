@@ -25,14 +25,12 @@ export default EventsPage;
 // Defered loading - should be async / await or promise
 async function loadEvents() {
   const response = await fetch("http://localhost:8080/events");
-  console.log(response);
   if (!response.ok) {
     // return { isError: true, message: "Could not fetch events" };
     // Throwing error responses: This is taken care by the nearest Error page
     throw json({ message: "could not fetch events" }, { status: 500 });
   } else {
     const resData = await response.json();
-    console.log(resData);
     return resData.events;
   }
 }
