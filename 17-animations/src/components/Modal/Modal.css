@@ -10,12 +10,59 @@
     top: 30%;
     left: 25%;
     width: 50%;
+    
+    /* CSS transition */
+    transition: all 0.3s ease-out;
 }
 
 .ModalOpen{
-    display: block;
+    /* CSS transitions */
+    /* opacity: 1; */
+    /* transform: translateY(0); */
+
+    /* CSS Animation */
+    animation: openModal 0.4s ease-out forwards;
 }
 
 .ModalClosed{
-    display: none;
+    /* CSS transition */
+    /* opacity: 0; */
+    /* transform: translateY(-100%); */
+
+    /* CSS Animation */
+    animation: closeModal 0.4s ease-out forwards;
+}
+
+/* CSS animation */
+@keyframes openModal {
+    0%{
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    50%{
+        opacity: 1;
+        transform: translateY(20%);
+    }
+    100%{
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* CSS animation */
+@keyframes closeModal {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translateY(60%);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
 }
