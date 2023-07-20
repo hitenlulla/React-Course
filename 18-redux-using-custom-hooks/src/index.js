@@ -1,24 +1,17 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import { Provider } from "react-redux";
-import { combineReducers, createStore } from "redux";
+import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import "./index.css";
 import App from "./App";
-import productReducer from "./store/reducers/products";
+import configureProductStore from "./hook-store/products-store";
 
-const rootReducer = combineReducers({
-  shop: productReducer,
-});
-
-const store = createStore(rootReducer);
+// Configure the product store, not this store will be available app wide just by using useStore() hook
+configureProductStore();
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <Provider store={store}>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </Provider>
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
 );
