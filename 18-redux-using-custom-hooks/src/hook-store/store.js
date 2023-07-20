@@ -4,17 +4,22 @@ let globalState = {};
 
 // Listeners will have the state-update function
 let listeners = [];
+// This will hold identifier-function mappings
+// This function will be declared by the hook user while configuring the store
 let actions = {};
 
-export const useStore = () => {
+// We need to provide the hook user, an option to toggle if he is using a listener or not: This is an optimization of reducing unwanted renders
+export const useStore = (shouldListen = true) => {
   const setState = useState(globalState)[1]; // only need the setter function
 
   // Attach the state update function as a listener when the hook is mounted
   useEffect(() => {
-    listeners.push(setState);
+    if (shouldListen) listeners.push(setState);
     // Remove the listener when the hook is unmounted: Cleanup function
-    return () => [(listeners = listeners.filter((li) => li !== setState))];
-  }, [setState]);
+    return () => {
+      if (shouldListen) listeners = listeners.filter((li) => li !== setState);
+    };
+  }, [setState, shouldListen]);
 
   // We need a dispatch function to update the state- takes the action-identifier and the to-update payload
   const dispatch = (actionIdentifier, payload) => {

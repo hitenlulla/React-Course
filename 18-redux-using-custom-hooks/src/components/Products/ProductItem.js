@@ -4,9 +4,10 @@ import Card from "../UI/Card";
 import "./ProductItem.css";
 import { useStore } from "../../hook-store/store";
 
-const ProductItem = (props) => {
+const ProductItem = React.memo((props) => {
   // Get the store dispatcher
-  const dispatch = useStore()[1];
+  // now this dispatch function will render all the other ProductItems, to avoid that we make sure that when we change this item, other items do not listen with help of shouldListen param
+  const dispatch = useStore(false)[1];
 
   const toggleFavHandler = () => {
     // Call the TOGGLE_FAV dispatcher function
@@ -27,6 +28,6 @@ const ProductItem = (props) => {
       </div>
     </Card>
   );
-};
+});
 
 export default ProductItem;
