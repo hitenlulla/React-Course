@@ -83,6 +83,7 @@
   - [Transition component](#transition-component)
     - [Transition component events](#transition-component-events)
   - [CSSTransition component](#csstransition-component)
+  - [TransitionGroup component](#transitiongroup-component)
 
 # Introduction
 1. #### What is **React** ?
@@ -2510,4 +2511,51 @@ const modal = (props) => {
 };
 
 export default modal;
+```
+
+## TransitionGroup component
+This component is mainly used to animate lists i.e. adding and removing items from list
+
+> Enclose a list in TransitionGroup, and every item in the list with CSSTransition
+```jsx
+const animationClassMapping = {
+    enter: "pre-fade-in",
+    enterActive: "fade-in",
+    exit: "pre-fade-out",
+    exitActive: "fade-out",
+  };
+
+const animationTimeout = {
+  enter: 300,
+  exit: 300,
+};
+
+const listItems = this.state.items.map((item, index) => (
+    // Every item needs to be transitioned, hence using CSSTransition 
+    <CSSTransition
+      key={index}
+      classNames={animationClassMapping}
+      timeout={animationTimeout}
+    >
+      <li className="ListItem" onClick={() => removeItemHandler(index)}>
+        {item}
+      </li>
+    </CSSTransition>
+  ));
+
+  return (
+    <div>
+      <button className="Button" onClick={addItemHandler}>
+        Add Item
+      </button>
+      <p>Click Item to Remove.</p>
+
+      {/* TransitionGroup is used to group the list of transitioning components. 
+      It will be rendered as a ul */}
+      <TransitionGroup component="ul" className="List">
+        {listItems}
+      </TransitionGroup>
+
+    </div>
+  );
 ```
