@@ -30,7 +30,7 @@
     /* transform: translateY(-100%); */
 
     /* CSS Animation */
-    animation: closeModal 0.4s ease-out forwards;
+    animation: closeModal 1s ease-out forwards;
 }
 
 /* CSS animation */
