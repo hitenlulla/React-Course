@@ -78,6 +78,7 @@
       - [Creating useHTTP hook](#creating-usehttp-hook)
       - [Using useHTTP hook to GET](#using-usehttp-hook-to-get)
       - [Using useHTTP hook to POST](#using-usehttp-hook-to-post)
+- [Animating React components](#animating-react-components)
 
 # Introduction
 1. #### What is **React** ?
@@ -2293,3 +2294,5 @@ function App(){
   );
 }
 ```
+
+# Animating React components
