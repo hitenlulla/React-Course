@@ -79,6 +79,10 @@
       - [Using useHTTP hook to GET](#using-usehttp-hook-to-get)
       - [Using useHTTP hook to POST](#using-usehttp-hook-to-post)
 - [Animating React components](#animating-react-components)
+  - [Installing react transition group](#installing-react-transition-group)
+  - [Transition component](#transition-component)
+    - [Transition component events](#transition-component-events)
+  - [CSSTransition component](#csstransition-component)
 
 # Introduction
 1. #### What is **React** ?
@@ -2296,3 +2300,214 @@ function App(){
 ```
 
 # Animating React components
+Animation can be done directly using the CSS but that has a drawback
+
+> CSS animation classes
+
+```css
+@keyframes openModal {
+    0%{
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    50%{
+        opacity: 1;
+        transform: translateY(20%);
+    }
+    100%{
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ModalOpen{
+    animation: openModal 0.4s ease-out forwards;
+}
+
+@keyframes closeModal {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translateY(60%);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+}
+
+.ModalClosed{
+    animation: closeModal 1s ease-out forwards;
+}
+```
+
+If we unmount the component due to any state change, CSS animation will not work, because component is removed before the animation ends. Hence to fix this we will use **react-transition-group**
+
+## Installing react transition group
+> npm install react-transition-group --save
+
+## Transition component
+```jsx
+import React from "react";
+import Transition from "react-transition-group/Transition";
+
+import "./Modal.css";
+
+const modal = (props) => {
+  // Animation enter and exit timings - acc to css-animation classes
+  const animationTiming = {
+    enter: 400,
+    exit: 1000,
+  };
+
+  return (
+    // Using Transition component to animate Modal
+    // in - tells whether component should be on the screen
+    // timeoute - tells the time taken for css-animations
+    // mountOnEnter - tells to mount the component on DOM when it enteres the screen
+    // unmountOnExit - tells to unmount the component from DOM when it exits the screen
+    // The enclosed children should be a function which has access to transitionState
+    // transitionState can be : 'entering', 'entered', 'exiting', 'exited'
+    // This transition state is used to add the animation css-classes to the component
+    <Transition
+      in={props.show}
+      timeout={animationTiming}
+      mountOnEnter
+      unmountOnExit
+    >
+      {(transitionState) => {
+        // Updating classes based on transitionState
+        const cssClasses = [
+          "Modal",
+          transitionState === "entering"
+            ? "ModalOpen"
+            : transitionState === "exiting"
+            ? "ModalClosed"
+            : null,
+        ];
+
+        return (
+          <div className={cssClasses.join(" ")}>
+            <h1>A Modal</h1>
+            <button className="Button" onClick={props.closed}>
+              Dismiss
+            </button>
+          </div>
+        );
+      }}
+    </Transition>
+  );
+};
+
+export default modal;
+```
+
+### Transition component events
+Used to create staggering animation when we want to wait for one animation to finish before starting the next
+```jsx
+import React from "react";
+import Transition from "react-transition-group/Transition";
+
+import "./Modal.css";
+
+const modal = (props) => {
+  // Animation enter and exit timings - acc to css-animation classes
+  const animationTiming = {
+    enter: 400,
+    exit: 1000,
+  };
+
+  return (
+    // Transition also has event props that can run functions when the event is occuring: onEnter, onEntering, onEntered, onExit, onExiting, onExited
+    <Transition
+      in={props.show}
+      timeout={animationTiming}
+      mountOnEnter
+      unmountOnExit
+      onEnter={console.log("Preparing to enter DOM")}
+      onEntering={console.log("Entering DOM")}
+      onEntered={console.log("Entered DOM")}
+      onExit={console.log("Preparing to exit DOM")}
+      onExiting={console.log("Exiting DOM")}
+      onExited={console.log("Exitied DOM")}
+    >
+      {(transitionState) => {
+        // Updating classes based on transitionState
+        const cssClasses = [
+          "Modal",
+          transitionState === "entering"
+            ? "ModalOpen"
+            : transitionState === "exiting"
+            ? "ModalClosed"
+            : null,
+        ];
+
+        return (
+          <div className={cssClasses.join(" ")}>
+            <h1>A Modal</h1>
+            <button className="Button" onClick={props.closed}>
+              Dismiss
+            </button>
+          </div>
+        );
+      }}
+    </Transition>
+  );
+};
+
+export default modal;
+```
+
+## CSSTransition component
+When we only want to deal with adding classes to a component, a better alternative to Transition Component is **CSSTransition** component
+```jsx
+import React from "react";
+import CSSTransition from "react-transition-group/CSSTransition";
+
+import "./Modal.css";
+
+const modal = (props) => {
+  const animationTiming = {
+    enter: 400,
+    exit: 1000,
+  };
+
+  // CSSTransition requires the classes based on animation event
+  const animationClasses = {
+    enter: "", //when component is entering the DOM
+    enterActive: "ModalOpen", //when component is on the DOM
+    exit: "", //when component is exiting the DOM
+    exitActive: "ModalClosed", //when component has exited the DOM
+    appear: "", //when component is rendering first time on the DOM
+    appearActive: "", //when component is rendered first time and attached to the DOM
+  };
+
+  return (
+    // Using CSSTransition component to animate Modal
+    // CSSTransition directly encloses a JSX component
+    // classNames should have the object that has the event-class mapping
+    // These classNames are automatically added to the enclosing child when that event occurs
+    <CSSTransition
+      in={props.show}
+      timeout={animationTiming}
+      mountOnEnter
+      unmountOnExit
+      classNames={animationClasses}
+    >
+      <div className="Modal">
+        <h1>A Modal</h1>
+        <button className="Button" onClick={props.closed}>
+          Dismiss
+        </button>
+      </div>
+    </CSSTransition>
+  );
+};
+
+export default modal;
+```

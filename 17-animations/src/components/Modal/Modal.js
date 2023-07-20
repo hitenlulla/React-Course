@@ -1,5 +1,5 @@
 import React from "react";
-import Transition from "react-transition-group/Transition";
+import CSSTransition from "react-transition-group/CSSTransition";
 
 import "./Modal.css";
 
@@ -9,36 +9,32 @@ const modal = (props) => {
     exit: 1000,
   };
 
+  // CSSTransition requires the classes based on animation event
+  const animationClasses = {
+    enter: "", //when component is entering the DOM
+    enterActive: "ModalOpen", //when component is on the DOM
+    exit: "", //when component is exiting the DOM
+    exitActive: "ModalClosed", //when component has exited the DOM
+    appear: "", //when component is rendering first time on the DOM
+    appearActive: "", //when component is rendered first time and attached to the DOM
+  };
+
   return (
-    // Using Transition component to animate Modal
-    <Transition
+    // Using CSSTransition component to animate Modal
+    <CSSTransition
       in={props.show}
       timeout={animationTiming}
       mountOnEnter
       unmountOnExit
+      classNames={animationClasses}
     >
-      {/* transitionState can be 'entering', 'entered', 'exiting', 'exited' */}
-      {(transitionState) => {
-        const cssClasses = [
-          "Modal",
-          transitionState === "entering"
-            ? "ModalOpen"
-            : transitionState === "exiting"
-            ? "ModalClosed"
-            : null,
-        ];
-        // Updating classes based on transitionState
-
-        return (
-          <div className={cssClasses.join(" ")}>
-            <h1>A Modal</h1>
-            <button className="Button" onClick={props.closed}>
-              Dismiss
-            </button>
-          </div>
-        );
-      }}
-    </Transition>
+      <div className="Modal">
+        <h1>A Modal</h1>
+        <button className="Button" onClick={props.closed}>
+          Dismiss
+        </button>
+      </div>
+    </CSSTransition>
   );
 };
 
