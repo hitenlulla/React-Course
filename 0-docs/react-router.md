@@ -363,7 +363,7 @@ return (
     <ul>
         {PRODUCTS.map((prod) => (
         <li key={prod.id}>
-            {* Creating links using parameterized product's id *}
+            {/* Creating links using parameterized product's id */}
             <Link to={`/products/${prod.id}`}>{prod.title}</Link>
         </li>
         ))}
@@ -922,8 +922,8 @@ export async function action({ request, params }) {
 }
 ```
 
-### Action state: useNavigate hook
-While submitting the Form we might need to show the user of submitting state, if the submission is taking time due to slow backend this can be done using useNavigate()
+### Action state: useNavigation hook
+While submitting the Form we might need to show the user of submitting state, if the submission is taking time due to slow backend this can be done using useNavigation()
 
 ```jsx
 import { useNavigation, Form } from "react-router-dom";
